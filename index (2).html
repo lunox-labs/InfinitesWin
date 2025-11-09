@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#8B5CF6">
+    <title>Winfinity - Calculateur de Surebets</title>
+    <meta name="description" content="Calculateur gratuit de surebets pour optimiser vos paris sportifs">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>∞</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>∞</text></svg>">
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * { -webkit-tap-highlight-color: transparent; }
+        body { overflow-x: hidden; margin: 0; }
+        @keyframes slideDown { from { transform: translateY(-100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .slide-down { animation: slideDown 0.3s ease-out; }
+        input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type="number"] { -moz-appearance: textfield; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        const PAYPAL_LINKS = {
+            cafe: "https://www.paypal.com/ncp/payment/XU7TZDRVUD4LW",
+            pizza: "https://www.paypal.com/ncp/payment/CF5D5JVNTZUWY",
+            burger: "https://www.paypal.com/ncp/payment/9F9KK6RBFWTXU",
+            custom: "https://www.paypal.com/ncp/payment/2S5X2UUQZNZE2"
+        };
+
+        function WinfinityApp() {
+            const [cote1, setCote1] = useState('');
+            const [cote2, setCote2] = useState('');
+            const [budget, setBudget] = useState('');
+            const [result, setResult] = useState(null);
+            const [showDonationModal, setShowDonationModal] = useState(false);
+            const [showRoadmapModal, setShowRoadmapModal] = useState(false);
+            const [notification, setNotification] = useState(null);
+            const [stats, setStats] = useState({ totalCalculs: 0, surebetsFound: 0 });
+            const [isCalculating, setIsCalculating] = useState(false);
+
+            useEffect(() => {
+                const savedCote1 = localStorage.getItem('winfinity_cote1');
+                const savedCote2 = localStorage.getItem('winfinity_cote2');
+                const savedBudget = localStorage.getItem('winfinity_budget');
+                const savedStats = localStorage.getItem('winfinity_stats');
+                if (savedCote1) setCote1(savedCote1);
+                if (savedCote2) setCote2(savedCote2);
+                if (savedBudget) setBudget(savedBudget);
+                if (savedStats) setStats(JSON.parse(savedStats));
+            }, []);
+
+            useEffect(() => { if (cote1) localStorage.setItem('winfinity_cote1', cote1); }, [cote1]);
+            useEffect(() => { if (cote2) localStorage.setItem('winfinity_cote2', cote2); }, [cote2]);
+            useEffect(() => { if (budget) localStorage.setItem('winfinity_budget', budget); }, [budget]);
+            useEffect(() => { localStorage.setItem('winfinity_stats', JSON.stringify(stats)); }, [stats]);
+
+            const showNotification = (message, type) => {
+                setNotification({ message, type });
+                setTimeout(() => setNotification(null), 3500);
+            };
+
+            const calculate = () => {
+                const c1 = parseFloat(cote1);
+                const c2 = parseFloat(cote2);
+                const b = parseFloat(budget);
+                if (!c1 || !c2 || !b || c1 <= 1 || c2 <= 1 || b <= 0) {
+                    showNotification('⚠️ Valeurs invalides', 'error');
+                    return;
+                }
+                setIsCalculating(true);
+                setTimeout(() => {
+                    const inverseSum = (1/c1) + (1/c2);
+                    const mise1 = (b / inverseSum) * (1/c1);
+                    const mise2 = (b / inverseSum) * (1/c2);
+                    const gain1 = mise1 * c1;
+                    const gain2 = mise2 * c2;
+                    const profit = gain1 - b;
+                    const profitPercent = (profit / b) * 100;
+                    const isSurebet = inverseSum < 1;
+                    setResult({
+                        mise1: mise1.toFixed(2), mise2: mise2.toFixed(2),
+                        gain1: gain1.toFixed(2), gain2: gain2.toFixed(2),
+                        profit: profit.toFixed(2), profitPercent: profitPercent.toFixed(2),
+                        isSurebet
+                    });
+                    setStats(prev => ({
+                        totalCalculs: prev.totalCalculs + 1,
+                        surebetsFound: prev.surebetsFound + (isSurebet ? 1 : 0)
+                    }));
+                    if (isSurebet) {
+                        showNotification(`✅ Surebet ! +${profit.toFixed(2)}€ (${profitPercent.toFixed(1)}%)`, 'success');
+                    } else {
+                        showNotification('❌ Pas de surebet', 'warning');
+                    }
+                    setIsCalculating(false);
+                }, 300);
+            };
+
+            const clearAll = () => {
+                setCote1(''); setCote2(''); setBudget(''); setResult(null);
+                showNotification('🗑️ Formulaire effacé', 'warning');
+            };
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 pb-4">
+                    {notification && (
+                        <div className={`fixed top-2 left-2 right-2 z-50 px-4 py-3 rounded-2xl shadow-2xl slide-down ${
+                            notification.type === 'success' ? 'bg-green-500' :
+                            notification.type === 'error' ? 'bg-red-500' : 'bg-orange-500'
+                        } text-white font-bold text-center text-sm`}>{notification.message}</div>
+                    )}
+                    <div className="max-w-lg mx-auto px-3 pt-3">
+                        <div className="bg-white bg-opacity-10 backdrop-blur-lg rounded-3xl p-4 mb-3 text-white shadow-2xl">
+                            <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-2">
+                                    <div className="text-4xl">∞</div>
+                                    <div>
+                                        <h1 className="text-2xl font-bold leading-tight">Winfinity</h1>
+                                        <p className="text-xs opacity-80">Calculateur de surebets</p>
+                                    </div>
+                                </div>
+                                <button onClick={() => setShowDonationModal(true)}
+                                    className="bg-gradient-to-r from-yellow-400 to-orange-500 px-5 py-2.5 rounded-full font-bold text-sm shadow-lg">
+                                    ☕ Don
+                                </button>
+                            </div>
+                            <div className="flex items-center justify-between bg-white bg-opacity-10 rounded-xl px-3 py-2 text-xs">
+                                <div className="flex items-center gap-4">
+                                    <span>📊 {stats.totalCalculs} calculs</span>
+                                    <span>✅ {stats.surebetsFound} surebets</span>
+                                </div>
+                                <button onClick={() => setShowRoadmapModal(true)} className="underline opacity-80">Roadmap</button>
+                            </div>
+                        </div>
+                        <div className="bg-gradient-to-r from-yellow-400 to-orange-400 rounded-2xl p-3 mb-3 shadow-xl">
+                            <p className="text-white font-bold text-sm text-center">💖 Aidez au développement des futures fonctionnalités !</p>
+                        </div>
+                        <div className="bg-white rounded-3xl p-5 shadow-2xl mb-3">
+                            <div className="flex items-center justify-between mb-4">
+                                <h2 className="text-xl font-bold text-gray-800">📊 Calculateur</h2>
+                                {(cote1 || cote2 || budget) && (
+                                    <button onClick={clearAll} className="text-xs text-gray-500 underline">Effacer</button>
+                                )}
+                            </div>
+                            <div className="space-y-3">
+                                <div>
+                                    <label className="block font-semibold mb-1.5 text-gray-700 text-sm">Cote Équipe 1</label>
+                                    <input type="number" step="0.01" value={cote1} onChange={(e) => setCote1(e.target.value)}
+                                        placeholder="Ex: 2.10" className="w-full px-4 py-3.5 border-2 border-gray-300 rounded-xl text-lg font-semibold focus:border-purple-500 focus:outline-none" />
+                                </div>
+                                <div>
+                                    <label className="block font-semibold mb-1.5 text-gray-700 text-sm">Cote Équipe 2</label>
+                                    <input type="number" step="0.01" value={cote2} onChange={(e) => setCote2(e.target.value)}
+                                        placeholder="Ex: 2.20" className="w-full px-4 py-3.5 border-2 border-gray-300 rounded-xl text-lg font-semibold focus:border-purple-500 focus:outline-none" />
+                                </div>
+                                <div>
+                                    <label className="block font-semibold mb-1.5 text-gray-700 text-sm">Budget total (€)</label>
+                                    <input type="number" step="0.01" value={budget} onChange={(e) => setBudget(e.target.value)}
+                                        placeholder="Ex: 100" className="w-full px-4 py-3.5 border-2 border-gray-300 rounded-xl text-lg font-semibold focus:border-purple-500 focus:outline-none" />
+                                </div>
+                                <button onClick={calculate} disabled={isCalculating}
+                                    className={`w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 rounded-xl text-lg font-bold shadow-xl transition-all ${isCalculating ? 'opacity-50' : ''}`}>
+                                    {isCalculating ? '⏳ Calcul...' : '🚀 Calculer'}
+                                </button>
+                            </div>
+                            {result && (
+                                <div className={`mt-4 p-4 rounded-xl ${result.isSurebet ? 'bg-gradient-to-r from-green-100 to-emerald-100 border-2 border-green-400' : 'bg-gradient-to-r from-yellow-100 to-orange-100 border-2 border-orange-400'}`}>
+                                    <h3 className="text-xl font-bold mb-3 text-gray-800 text-center">
+                                        {result.isSurebet ? '✅ SUREBET TROUVÉ !' : '❌ Pas de surebet'}
+                                    </h3>
+                                    <div className="bg-white rounded-xl p-3 mb-3 space-y-2 text-sm">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-gray-600">Mise Équipe 1:</span>
+                                            <span className="font-bold text-lg text-purple-600">{result.mise1}€</span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-gray-600">Mise Équipe 2:</span>
+                                            <span className="font-bold text-lg text-pink-600">{result.mise2}€</span>
+                                        </div>
+                                        <div className="border-t border-gray-200 pt-2 mt-2">
+                                            <div className="flex justify-between items-center text-xs text-gray-500">
+                                                <span>Gain si Équipe 1:</span><span className="font-semibold">{result.gain1}€</span>
+                                            </div>
+                                            <div className="flex justify-between items-center text-xs text-gray-500 mt-1">
+                                                <span>Gain si Équipe 2:</span><span className="font-semibold">{result.gain2}€</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className={`${result.isSurebet ? 'bg-green-500' : 'bg-orange-500'} rounded-xl p-4 text-white`}>
+                                        <div className="flex justify-between items-center">
+                                            <span className="font-semibold">Profit garanti:</span>
+                                            <div className="text-right">
+                                                <div className="text-2xl font-bold">{result.profit}€</div>
+                                                <div className="text-xs opacity-90">({result.profitPercent}%)</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        <div className="bg-white rounded-3xl p-5 shadow-2xl mb-3">
+                            <h2 className="text-lg font-bold mb-3 text-gray-800">💡 Qu'est-ce qu'un surebet ?</h2>
+                            <p className="text-sm text-gray-700 leading-relaxed mb-3">Un <strong>surebet</strong> (arbitrage) garantit un profit en pariant sur tous les résultats possibles.</p>
+                            <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-3 border-2 border-purple-200">
+                                <p className="text-xs font-semibold text-gray-700 mb-2">📈 Exemple concret :</p>
+                                <p className="text-xs text-gray-600">• Betclic: PSG à <strong>2.10</strong><br/>• Unibet: Lyon à <strong>2.15</strong><br/>
+                                <span className="text-green-600 font-bold">→ Profit garanti ~6% !</span></p>
+                            </div>
+                        </div>
+                        <div className="bg-white rounded-3xl p-5 shadow-2xl">
+                            <h2 className="text-lg font-bold mb-3 text-gray-800 text-center">🎯 Bookmakers</h2>
+                            <p className="text-xs text-gray-600 mb-3 text-center">Comparez les cotes</p>
+                            <div className="grid grid-cols-2 gap-3">
+                                {[
+                                    { name: 'Betclic', url: 'https://www.betclic.fr', emoji: '🔵' },
+                                    { name: 'Unibet', url: 'https://www.unibet.fr', emoji: '🟢' },
+                                    { name: 'PMU', url: 'https://www.pmu.fr', emoji: '🔴' },
+                                    { name: 'Winamax', url: 'https://www.winamax.fr', emoji: '🟠' },
+                                    { name: 'ParionsSport', url: 'https://www.parionssport.fdj.fr', emoji: '🔷' },
+                                    { name: 'Bwin', url: 'https://www.bwin.fr', emoji: '🟡' },
+                                    { name: 'ZEbet', url: 'https://www.zebet.fr', emoji: '🟣' },
+                                    { name: 'NetBet', url: 'https://www.netbet.fr', emoji: '🩷' }
+                                ].map((b, i) => (
+                                    <a key={i} href={b.url} target="_blank" rel="noopener noreferrer"
+                                        className="bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-200 p-4 rounded-xl text-center transition-all shadow-sm">
+                                        <div className="text-2xl mb-1">{b.emoji}</div>
+                                        <div className="text-sm font-bold text-gray-800">{b.name}</div>
+                                    </a>
+                                ))}
+                            </div>
+                        </div>
+                        <p className="text-center mt-4 text-white text-xs opacity-70">Made with ❤️ by Winfinity</p>
+
+                        {showDonationModal && (
+                            <div className="fixed inset-0 bg-black bg-opacity-80 flex items-end sm:items-center justify-center z-50" onClick={() => setShowDonationModal(false)}>
+                                <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full sm:max-w-lg p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                                    <div className="text-center mb-5">
+                                        <div className="text-6xl mb-3">☕</div>
+                                        <h2 className="text-3xl font-bold text-gray-800 mb-2">Soutenez Winfinity</h2>
+                                        <p className="text-sm text-gray-600">Chaque don aide 🚀</p>
+                                    </div>
+                                    <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 mb-4 border border-blue-200">
+                                        <p className="text-sm text-gray-700 text-center">Votre contribution finance le développement. Merci ! ❤️</p>
+                                    </div>
+                                    <div className="space-y-3 mb-4">
+                                        <a href={PAYPAL_LINKS.cafe} target="_blank" rel="noopener noreferrer"
+                                            className="block bg-gradient-to-r from-blue-500 to-blue-600 text-white text-center py-4 rounded-xl font-bold transition shadow-lg">☕ Un café - 1€</a>
+                                        <a href={PAYPAL_LINKS.pizza} target="_blank" rel="noopener noreferrer"
+                                            className="block bg-gradient-to-r from-purple-500 to-purple-600 text-white text-center py-4 rounded-xl font-bold transition shadow-lg">🍕 Une pizza - 2€</a>
+                                        <a href={PAYPAL_LINKS.burger} target="_blank" rel="noopener noreferrer"
+                                            className="block bg-gradient-to-r from-orange-500 to-orange-600 text-white text-center py-4 rounded-xl font-bold transition shadow-lg">🍔 Un burger - 5€</a>
+                                        <a href={PAYPAL_LINKS.custom} target="_blank" rel="noopener noreferrer"
+                                            className="block bg-gradient-to-r from-yellow-400 to-pink-500 text-white text-center py-5 rounded-xl font-bold transition shadow-xl text-lg">💎 Montant personnalisé</a>
+                                    </div>
+                                    <button onClick={() => { setShowDonationModal(false); setShowRoadmapModal(true); }}
+                                        className="w-full bg-gray-100 text-gray-700 py-3 rounded-xl font-medium transition mb-3">🔍 Voir les fonctionnalités futures</button>
+                                    <button onClick={() => setShowDonationModal(false)} className="w-full text-gray-500 py-2 font-medium">Fermer</button>
+                                </div>
+                            </div>
+                        )}
+
+                        {showRoadmapModal && (
+                            <div className="fixed inset-0 bg-black bg-opacity-80 flex items-end sm:items-center justify-center z-50" onClick={() => setShowRoadmapModal(false)}>
+                                <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full sm:max-w-2xl p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                                    <div className="text-center mb-5">
+                                        <div className="text-5xl mb-3">🚀</div>
+                                        <h2 className="text-2xl font-bold text-gray-800 mb-2">Fonctionnalités futures</h2>
+                                    </div>
+                                    <div className="space-y-3 text-sm mb-5">
+                                        <div className="bg-green-50 border-2 border-green-300 rounded-xl p-4">
+                                            <h3 className="font-bold mb-2">🤖 Scraping automatique</h3>
+                                            <p className="text-gray-700">Scan de 15+ bookmakers en temps réel.</p>
+                                        </div>
+                                        <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-4">
+                                            <h3 className="font-bold mb-2">📊 Statistiques détaillées</h3>
+                                            <p className="text-gray-700">Historique illimité et graphiques.</p>
+                                        </div>
+                                        <div className="bg-purple-50 border-2 border-purple-300 rounded-xl p-4">
+                                            <h3 className="font-bold mb-2">⚖️ Comparateur live</h3>
+                                            <p className="text-gray-700">Visualisation temps réel des cotes.</p>
+                                        </div>
+                                    </div>
+                                    <button onClick={() => setShowRoadmapModal(false)} className="w-full bg-gray-200 text-gray-700 py-4 rounded-xl font-bold">Fermer</button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+        ReactDOM.render(<WinfinityApp />, document.getElementById('root'));
+    </script>
+</body>
+</html>
