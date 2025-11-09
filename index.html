@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#8B5CF6">
-    <title>Winfinity - Calculateur de Surebets</title>
+    <title>InfinitesWin - Calculateur de Surebets</title>
     <meta name="description" content="Calculateur gratuit de surebets pour optimiser vos paris sportifs">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>∞</text></svg>">
     <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>∞</text></svg>">
@@ -32,7 +32,7 @@
             custom: "https://www.paypal.com/ncp/payment/2S5X2UUQZNZE2"
         };
 
-        function WinfinityApp() {
+        function InfinitesWinApp() {
             const [cote1, setCote1] = useState('');
             const [cote2, setCote2] = useState('');
             const [budget, setBudget] = useState('');
@@ -44,20 +44,20 @@
             const [isCalculating, setIsCalculating] = useState(false);
 
             useEffect(() => {
-                const savedCote1 = localStorage.getItem('winfinity_cote1');
-                const savedCote2 = localStorage.getItem('winfinity_cote2');
-                const savedBudget = localStorage.getItem('winfinity_budget');
-                const savedStats = localStorage.getItem('winfinity_stats');
+                const savedCote1 = localStorage.getItem('infiniteswin_cote1');
+                const savedCote2 = localStorage.getItem('infiniteswin_cote2');
+                const savedBudget = localStorage.getItem('infiniteswin_budget');
+                const savedStats = localStorage.getItem('infiniteswin_stats');
                 if (savedCote1) setCote1(savedCote1);
                 if (savedCote2) setCote2(savedCote2);
                 if (savedBudget) setBudget(savedBudget);
                 if (savedStats) setStats(JSON.parse(savedStats));
             }, []);
 
-            useEffect(() => { if (cote1) localStorage.setItem('winfinity_cote1', cote1); }, [cote1]);
-            useEffect(() => { if (cote2) localStorage.setItem('winfinity_cote2', cote2); }, [cote2]);
-            useEffect(() => { if (budget) localStorage.setItem('winfinity_budget', budget); }, [budget]);
-            useEffect(() => { localStorage.setItem('winfinity_stats', JSON.stringify(stats)); }, [stats]);
+            useEffect(() => { if (cote1) localStorage.setItem('infiniteswin_cote1', cote1); }, [cote1]);
+            useEffect(() => { if (cote2) localStorage.setItem('infiniteswin_cote2', cote2); }, [cote2]);
+            useEffect(() => { if (budget) localStorage.setItem('infiniteswin_budget', budget); }, [budget]);
+            useEffect(() => { localStorage.setItem('infiniteswin_stats', JSON.stringify(stats)); }, [stats]);
 
             const showNotification = (message, type) => {
                 setNotification({ message, type });
@@ -120,7 +120,7 @@
                                 <div className="flex items-center gap-2">
                                     <div className="text-4xl">∞</div>
                                     <div>
-                                        <h1 className="text-2xl font-bold leading-tight">Winfinity</h1>
+                                        <h1 className="text-2xl font-bold leading-tight">InfinitesWin</h1>
                                         <p className="text-xs opacity-80">Calculateur de surebets</p>
                                     </div>
                                 </div>
@@ -234,14 +234,14 @@
                                 ))}
                             </div>
                         </div>
-                        <p className="text-center mt-4 text-white text-xs opacity-70">Made with ❤️ by Winfinity</p>
+                        <p className="text-center mt-4 text-white text-xs opacity-70">Made with ❤️ by InfinitesWin</p>
 
                         {showDonationModal && (
                             <div className="fixed inset-0 bg-black bg-opacity-80 flex items-end sm:items-center justify-center z-50" onClick={() => setShowDonationModal(false)}>
                                 <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full sm:max-w-lg p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                                     <div className="text-center mb-5">
                                         <div className="text-6xl mb-3">☕</div>
-                                        <h2 className="text-3xl font-bold text-gray-800 mb-2">Soutenez Winfinity</h2>
+                                        <h2 className="text-3xl font-bold text-gray-800 mb-2">Soutenez InfinitesWin</h2>
                                         <p className="text-sm text-gray-600">Chaque don aide 🚀</p>
                                     </div>
                                     <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 mb-4 border border-blue-200">
@@ -293,7 +293,7 @@
                 </div>
             );
         }
-        ReactDOM.render(<WinfinityApp />, document.getElementById('root'));
+        ReactDOM.render(<InfinitesWinApp />, document.getElementById('root'));
     </script>
 </body>
 </html>
