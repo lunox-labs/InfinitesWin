@@ -1,1 +1,1 @@
-# winfinity
+# InfinitesWin
